@@ -12,10 +12,10 @@ from model import RNN, _START_VOCAB
 tf.app.flags.DEFINE_boolean("is_train", True, "Set to False to inference.")
 tf.app.flags.DEFINE_boolean("read_graph", False, "Set to False to build graph.")
 tf.app.flags.DEFINE_integer("symbols", 18430, "vocabulary size.")
-tf.app.flags.DEFINE_integer("labels", 5, "Number of labels.")
+tf.app.flags.DEFINE_integer("labels", 512, "Number of labels.")
 tf.app.flags.DEFINE_integer("epoch", 1e6, "Number of epoch.")
 tf.app.flags.DEFINE_integer("embed_units", 300, "Size of word embedding.")
-tf.app.flags.DEFINE_integer("units", 512, "Size of each model layer.")
+tf.app.flags.DEFINE_integer("units", 5, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("layers", 1, "Number of layers in the model.")
 tf.app.flags.DEFINE_integer("batch_size", 16, "Batch size to use during training.")
 tf.app.flags.DEFINE_string("data_dir", "./data", "Data directory")
@@ -51,7 +51,17 @@ def build_vocab(path, data):
     print("Loading word vectors...")
     #todo: load word vector from 'vector.txt' to embed, where the value of each line is the word vector of the word in vocab_list
     embed = []
-    
+    zeros = [0 for i in range(300)]
+    rands = [random.uniform(0, 1) for i in range(300)]
+    with open('%s/%s' % (path, 'vector.txt')) as f:
+        vocab_idx = 0
+        for idx, line in enumerate(f):
+            tokens = line.split(' ')
+            while(tokens[0] != vocab_list[vocab_idx]):
+                embed.append(zeros)
+                vocab_idx += 1
+            embed.append(tokens[1:])
+            vocab_idx += 1
     embed = np.array(embed, dtype=np.float32)
     return vocab_list, embed
 
@@ -127,7 +137,7 @@ with tf.Session(config=config) as sess:
                 FLAGS.layers,
                 FLAGS.labels,
                 embed,
-                learning_rate=0.001)
+                learning_rate=1)
         if FLAGS.log_parameters:
             model.print_parameters()
         
@@ -156,9 +166,12 @@ with tf.Session(config=config) as sess:
             print("epoch %d learning rate %.4f epoch-time %.4f loss %.8f accuracy [%.8f]" % (epoch, model.learning_rate.eval(), time.time()-start_time, loss, accuracy))
             #todo: implement the tensorboard code recording the statistics of development and test set
             loss, accuracy = evaluate(model, sess, data_dev)
+            summary.value.add(tag='loss/dev', simple_value = loss)
+            summary.value.add(tag='accuracy/dev', simple_value = accuracy)
             print("        dev_set, loss %.8f, accuracy [%.8f]" % (loss, accuracy))
 
             loss, accuracy = evaluate(model, sess, data_test)
+            summary.value.add(tag='loss/test', simple_value = loss)
+            summary.value.add(tag='accuracy/test', simple_value = accuracy)
             print("        test_set, loss %.8f, accuracy [%.8f]" % (loss, accuracy))
-
 

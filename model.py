@@ -5,6 +5,7 @@ from tensorflow.python.ops.nn import dynamic_rnn
 from tensorflow.contrib.lookup.lookup_ops import MutableHashTable
 from tensorflow.contrib.layers.python.layers import layers
 from cell import GRUCell, BasicLSTMCell, BasicRNNCell
+from cell import weight_variable, bias_variable
 
 PAD_ID = 0
 UNK_ID = 1
@@ -21,9 +22,9 @@ class RNN(object):
             learning_rate=0.5,
             max_gradient_norm=5.0):
         #todo: implement placeholders
-        self.texts = tf.placeholder([None, ])  # shape: batch*len
-        self.texts_length = tf.placeholder([None])  # shape: batch
-        self.labels = tf.placeholder([None])  # shape: batch
+        self.texts = tf.placeholder(tf.string, [None, None], name="texts")  # shape: batch*len
+        self.texts_length = tf.placeholder(tf.int64, [None], name="texts_length")  # shape: batch
+        self.labels = tf.placeholder(tf.int64, [None], name="labels")  # shape: batch
         
         self.symbol2index = MutableHashTable(
                 key_dtype=tf.string,
@@ -59,8 +60,11 @@ class RNN(object):
         
 
         outputs, states = dynamic_rnn(cell, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
-
         #todo: implement unfinished networks
+        outputs_flat = tf.reduce_mean(outputs, 1)
+        W_f = weight_variable([tf.app.flags.FLAGS.units, 5])
+        b_f = bias_variable([5])
+        logits = tf.matmul(outputs_flat, W_f) + b_f
 
         self.loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=logits), name='loss')
         mean_loss = self.loss / tf.cast(tf.shape(self.labels)[0], dtype=tf.float32)
