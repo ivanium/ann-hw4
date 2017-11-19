@@ -8,6 +8,7 @@ class BasicRNNCell(tf.contrib.rnn.RNNCell):
         self._num_units = num_units
         self._activation = activation
         self._reuse = reuse
+
         self.W = weight_variable([FLAGS.embed_units, self.state_size])
         self.U = weight_variable([self.state_size, self.state_size])
         self.b = bias_variable([self.state_size])
@@ -23,7 +24,7 @@ class BasicRNNCell(tf.contrib.rnn.RNNCell):
     def __call__(self, inputs, state, scope=None):
         with tf.variable_scope(scope or "basic_rnn_cell", reuse=self._reuse):
             #todo: implement the new_state calculation given inputs and state
-            new_state = self._activation(tf.matmul(inputs, self.W) + tf.matmul(state, self.U)+ self.b)
+            new_state = self._activation(tf.matmul(inputs, self.W) + tf.matmul(state, self.U) + self.b)
 
         return new_state, new_state
 

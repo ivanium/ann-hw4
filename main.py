@@ -13,14 +13,15 @@ tf.app.flags.DEFINE_boolean("is_train", True, "Set to False to inference.")
 tf.app.flags.DEFINE_boolean("read_graph", False, "Set to False to build graph.")
 tf.app.flags.DEFINE_integer("symbols", 18430, "vocabulary size.")
 tf.app.flags.DEFINE_integer("labels", 5, "Number of labels.")
-tf.app.flags.DEFINE_integer("epoch", 1e6, "Number of epoch.")
+tf.app.flags.DEFINE_integer("epoch", 100, "Number of epoch.")
 tf.app.flags.DEFINE_integer("embed_units", 300, "Size of word embedding.")
-tf.app.flags.DEFINE_integer("units", 32, "Size of each model layer.")
+tf.app.flags.DEFINE_integer("units", 512, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("layers", 1, "Number of layers in the model.")
-tf.app.flags.DEFINE_integer("batch_size", 16, "Batch size to use during training.")
+tf.app.flags.DEFINE_integer("batch_size", 128, "Batch size to use during training.")
 tf.app.flags.DEFINE_string("data_dir", "./data", "Data directory")
 tf.app.flags.DEFINE_string("train_dir", "./train", "Training directory.")
 tf.app.flags.DEFINE_boolean("log_parameters", True, "Set to True to show the parameters")
+tf.app.flags.DEFINE_boolean("learning_rate", 0.01, "learning rate")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -137,7 +138,7 @@ with tf.Session(config=config) as sess:
                 FLAGS.layers,
                 FLAGS.labels,
                 embed,
-                learning_rate=0.1)
+                learning_rate=FLAGS.learning_rate)
         if FLAGS.log_parameters:
             model.print_parameters()
         

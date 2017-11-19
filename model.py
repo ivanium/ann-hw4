@@ -36,6 +36,9 @@ class RNN(object):
         # build the vocab table (string to index)
         # initialize the training process
         self.learning_rate = tf.Variable(float(learning_rate), trainable=False, dtype=tf.float32)
+        learning_rate_decay_factor = 0.9
+        self.learning_rate_decay_op = self.learning_rate.assign(self.learning_rate * learning_rate_decay_factor)
+
         self.global_step = tf.Variable(0, trainable=False)
         self.epoch = tf.Variable(0, trainable=False)
         self.epoch_add_op = self.epoch.assign(self.epoch + 1)
@@ -64,9 +67,11 @@ class RNN(object):
         outputs, states = dynamic_rnn(cell, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
         #todo: implement unfinished networks
         outputs_flat = tf.reduce_mean(outputs, 1)
-        W_f = weight_variable([tf.app.flags.FLAGS.units, 5])
-        b_f = bias_variable([5])
-        logits = tf.matmul(outputs_flat, W_f) + b_f
+        # W_f = weight_variable([tf.app.flags.FLAGS.units, 5])
+        # b_f = bias_variable([5])
+        # logits = tf.matmul(outputs_flat, W_f) + b_f
+        fc_layer = tf.layers.dense(inputs = outputs_flat, units = 32, activation = tf.nn.relu)
+        logits = tf.layers.dense(inputs = fc_layer, units = 5, activation = None)
 
         self.loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=logits), name='loss')
         mean_loss = self.loss / tf.cast(tf.shape(self.labels)[0], dtype=tf.float32)
