@@ -57,6 +57,8 @@ class RNN(object):
         
         if num_layers == 1:
             cell = BasicRNNCell(num_units)
+            # cell = GRUCell(num_units)
+            # cell = BasicLSTMCell(num_units)
         
 
         outputs, states = dynamic_rnn(cell, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
