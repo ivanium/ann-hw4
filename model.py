@@ -59,19 +59,30 @@ class RNN(object):
 
         
         if num_layers == 1:
-            cell = BasicRNNCell(num_units)
-            # cell = GRUCell(num_units)
+            # cell = BasicRNNCell(num_units)
+            cell = GRUCell(num_units)
             # cell = BasicLSTMCell(num_units)
         
 
-        outputs, states = dynamic_rnn(cell, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
-        #todo: implement unfinished networks
-        outputs_flat = tf.reduce_mean(outputs, 1)
-        # W_f = weight_variable([tf.app.flags.FLAGS.units, 5])
-        # b_f = bias_variable([5])
-        # logits = tf.matmul(outputs_flat, W_f) + b_f
-        fc_layer = tf.layers.dense(inputs = outputs_flat, units = 32, activation = tf.nn.relu)
-        logits = tf.layers.dense(inputs = fc_layer, units = 5, activation = None)
+            outputs, states = dynamic_rnn(cell, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
+            #todo: implement unfinished networks
+            outputs_flat = tf.reduce_mean(outputs, 1)
+            print(outputs, states, outputs_flat)
+            # W_f = weight_variable([tf.app.flags.FLAGS.units, 5])
+            # b_f = bias_variable([5])
+            # logits = tf.matmul(outputs_flat, W_f) + b_f
+            # fc_layer = tf.layers.dense(inputs = states, units = 32, activation = tf.nn.relu)
+            logits = tf.layers.dense(inputs = states, units = 5, activation = None)
+
+        else:
+            cell1 = GRUCell(num_units)
+            cell2 = GRUCell(num_units)
+            outputs1, states1 = dynamic_rnn(cell1, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
+            r_outputs1 = tf.reverse(outputs1, dims=[1])
+            outputs2, states2 = dynamic_rnn(cell2, r_outputs1, self.texts_length, dtype=tf.float32, scope="rnn")
+
+            fc_layer = tf.layers.dense(inputs = states2, units = 32, activation = tf.nn.relu)
+            logits = tf.layers.dense(inputs = fc_layer, units = 5, activation = None)
 
         self.loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=logits), name='loss')
         mean_loss = self.loss / tf.cast(tf.shape(self.labels)[0], dtype=tf.float32)
@@ -81,7 +92,9 @@ class RNN(object):
         self.params = tf.trainable_variables()
             
         # calculate the gradient of parameters
-        opt = tf.train.GradientDescentOptimizer(self.learning_rate)
+        # opt = tf.train.GradientDescentOptimizer(self.learning_rate)
+        opt = tf.train.AdamOptimizer(self.learning_rate)
+        
         gradients = tf.gradients(mean_loss, self.params)
         clipped_gradients, self.gradient_norm = tf.clip_by_global_norm(gradients, max_gradient_norm)
         self.update = opt.apply_gradients(zip(clipped_gradients, self.params), global_step=self.global_step)

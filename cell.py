@@ -44,9 +44,9 @@ class GRUCell(tf.contrib.rnn.RNNCell):
         self.U_r = weight_variable([self.state_size, self.state_size])
         self.U_c = weight_variable([self.state_size, self.state_size])
 
-        self.b_z = bias_variable([self.state_size], init_value = 1)
-        self.b_r = bias_variable([self.state_size], init_value = 1)
-        self.b_c = bias_variable([self.state_size], init_value = 1)
+        self.b_z = bias_variable([self.state_size], init_value = 1.0)
+        self.b_r = bias_variable([self.state_size], init_value = 1.0)
+        self.b_c = bias_variable([self.state_size])
 
     @property
     def state_size(self):
