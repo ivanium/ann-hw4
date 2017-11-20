@@ -75,14 +75,19 @@ class RNN(object):
             logits = tf.layers.dense(inputs = states, units = 5, activation = None)
 
         else:
-            cell1 = GRUCell(num_units)
-            cell2 = GRUCell(num_units)
+            # cell1 = BasicRNNCell(num_units)
+            # cell1 = GRUCell(num_units)
+            cell1 = BasicLSTMCell(num_units)
+
+            # cell2 = BasicRNNCell(num_units)
+            # cell2 = GRUCell(num_units)
+            cell2 = BasicLSTMCell(num_units)
             outputs1, states1 = dynamic_rnn(cell1, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
-            r_outputs1 = tf.reverse(outputs1, dims=[1])
+            r_outputs1 = tf.reverse(outputs1, [1])
             outputs2, states2 = dynamic_rnn(cell2, r_outputs1, self.texts_length, dtype=tf.float32, scope="rnn")
 
-            fc_layer = tf.layers.dense(inputs = states2, units = 32, activation = tf.nn.relu)
-            logits = tf.layers.dense(inputs = fc_layer, units = 5, activation = None)
+            # fc_layer = tf.layers.dense(inputs = states2, units = 32, activation = tf.nn.relu)
+            logits = tf.layers.dense(inputs = states2, units = 5, activation = None)
 
         self.loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=logits), name='loss')
         mean_loss = self.loss / tf.cast(tf.shape(self.labels)[0], dtype=tf.float32)
