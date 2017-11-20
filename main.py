@@ -21,7 +21,7 @@ tf.app.flags.DEFINE_integer("batch_size", 16, "Batch size to use during training
 tf.app.flags.DEFINE_string("data_dir", "./data", "Data directory")
 tf.app.flags.DEFINE_string("train_dir", "./train", "Training directory.")
 tf.app.flags.DEFINE_boolean("log_parameters", True, "Set to True to show the parameters")
-tf.app.flags.DEFINE_boolean("learning_rate", 0.001, "learning rate")
+tf.app.flags.DEFINE_boolean("learning_rate", 0.01, "learning rate")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -72,14 +72,19 @@ def gen_batch_data(data):
 
     max_len = max([len(item['text']) for item in data])
     texts, texts_length, labels = [], [], []
-        
+    
     for item in data:
         texts.append(padding(item['text'], max_len))
         texts_length.append(len(item['text']))
         labels.append(int(item['label']))
-
+        
     batched_data = {'texts': np.array(texts), 'texts_length':texts_length, 'labels':labels}
 
+    reverse_texts = []
+    if(FLAGS.layers > 1):
+        for item in data:
+            reverse_texts.append(padding([i for i in reversed(item['text'])], max_len))
+        batched_data['reverse_texts'] = np.array(reverse_texts)
     return batched_data
 
 def train(model, sess, dataset):
@@ -103,7 +108,16 @@ def evaluate(model, sess, dataset):
     while ed < len(dataset):
         st, ed = ed, ed+FLAGS.batch_size if ed+FLAGS.batch_size < len(dataset) else len(dataset)
         batch_data = gen_batch_data(dataset[st:ed])
-        outputs = sess.run(['loss:0', 'accuracy:0'], {'texts:0':batch_data['texts'], 'texts_length:0':batch_data['texts_length'], 'labels:0':batch_data['labels']})
+        outputs = sess.run(
+                ['loss:0', 'accuracy:0'], 
+                {'texts:0':batch_data['texts'], 'texts_length:0':batch_data['texts_length'], 
+                'labels:0':batch_data['labels']}
+            ) if (FLAGS.layers == 1) else sess.run(
+                ['loss:0', 'accuracy:0'], 
+                {'texts:0':batch_data['texts'], 'reverse_texts:0':batch_data['reverse_texts'], 
+                'texts_length:0':batch_data['texts_length'], 'labels:0':batch_data['labels']}
+            )
+            
         loss += outputs[0]
         accuracy += outputs[1]
     return loss / len(dataset), accuracy / len(dataset)
@@ -114,7 +128,15 @@ def inference(model, sess, dataset):
     while ed < len(dataset):
         st, ed = ed, ed+FLAGS.batch_size if ed+FLAGS.batch_size < len(dataset) else len(dataset)
         batch_data = gen_batch_data(dataset[st:ed])
-        outputs = sess.run(['predict_labels:0'], {'texts:0':batch_data['texts'], 'texts_length:0':batch_data['texts_length']})
+        outputs = sess.run(
+                ['predict_labels:0'], 
+                {'texts:0':batch_data['texts'], 
+                'texts_length:0':batch_data['texts_length']}
+            ) if (FLAGS.layers == 1) else sess.run(
+                ['predict_labels:0'], 
+                {'texts:0':batch_data['texts'], 'reverse_texts:0':batch_data['reverse_texts'],
+                'texts_length:0':batch_data['texts_length']}
+            )
         result += outputs[0].tolist()
 
     with open('result.txt', 'w') as f:

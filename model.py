@@ -11,6 +11,8 @@ PAD_ID = 0
 UNK_ID = 1
 _START_VOCAB = ['_PAD', '_UNK']
 
+FLAGS = tf.app.flags.FLAGS
+
 class RNN(object):
     def __init__(self,
             num_symbols,
@@ -25,7 +27,7 @@ class RNN(object):
         self.texts = tf.placeholder(tf.string, [None, None], name="texts")  # shape: batch*len
         self.texts_length = tf.placeholder(tf.int64, [None], name="texts_length")  # shape: batch
         self.labels = tf.placeholder(tf.int64, [None], name="labels")  # shape: batch
-        
+
         self.symbol2index = MutableHashTable(
                 key_dtype=tf.string,
                 value_dtype=tf.int64,
@@ -75,6 +77,9 @@ class RNN(object):
             logits = tf.layers.dense(inputs = states, units = 5, activation = None)
 
         else:
+            self.reverse_texts = tf.placeholder(tf.string, [None, None], name="reverse_texts")  # shape: batch*len
+            self.index_reverse_input = self.symbol2index.lookup(self.reverse_texts)
+            self.embed_reverse_input = tf.nn.embedding_lookup(self.embed, self.index_reverse_input) #batch*len*embed_unit
             # cell1 = BasicRNNCell(num_units)
             # cell1 = GRUCell(num_units)
             cell1 = BasicLSTMCell(num_units)
@@ -82,12 +87,12 @@ class RNN(object):
             # cell2 = BasicRNNCell(num_units)
             # cell2 = GRUCell(num_units)
             cell2 = BasicLSTMCell(num_units)
-            outputs1, states1 = dynamic_rnn(cell1, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
-            r_outputs1 = tf.reverse(outputs1, [1])
-            outputs2, states2 = dynamic_rnn(cell2, r_outputs1, self.texts_length, dtype=tf.float32, scope="rnn")
-
+            outputs1, states1 = dynamic_rnn(cell1, self.embed_reverse_input, self.texts_length, dtype=tf.float32, scope="rnn")
+            outputs2, states2 = dynamic_rnn(cell2, self.embed_reverse_input, self.texts_length, dtype=tf.float32, scope="rnn")
+            
+            states = states1[-1] + states2[-1]
             # fc_layer = tf.layers.dense(inputs = states2, units = 32, activation = tf.nn.relu)
-            logits = tf.layers.dense(inputs = states2, units = 5, activation = None)
+            logits = tf.layers.dense(inputs = states, units = 5, activation = None)
 
         self.loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=logits), name='loss')
         mean_loss = self.loss / tf.cast(tf.shape(self.labels)[0], dtype=tf.float32)
@@ -118,9 +123,16 @@ class RNN(object):
             print('%s: %s' % (item.name, item.get_shape()))
     
     def train_step(self, session, data, summary=False):
-        input_feed = {self.texts: data['texts'],
-                self.texts_length: data['texts_length'],
-                self.labels: data['labels']}
+        input_feed = {
+                    self.texts: data['texts'],
+                    self.texts_length: data['texts_length'],
+                    self.labels: data['labels']
+                } if (FLAGS.layers == 1) else {
+                    self.texts: data['texts'],
+                    self.reverse_texts: data['reverse_texts'],
+                    self.texts_length: data['texts_length'],
+                    self.labels: data['labels']
+                }
         output_feed = [self.loss, self.accuracy, self.gradient_norm, self.update]
         if summary:
             output_feed.append(self.merged_summary_op)
