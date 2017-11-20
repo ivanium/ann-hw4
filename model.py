@@ -59,17 +59,22 @@ class RNN(object):
         
         self.embed_input = tf.nn.embedding_lookup(self.embed, self.index_input) #batch*len*embed_unit
 
-        
-        if num_layers == 1:
-            # cell = BasicRNNCell(num_units)
-            cell = GRUCell(num_units)
-            # cell = BasicLSTMCell(num_units)
-        
+        model = 'lstm'
 
-            outputs, states = dynamic_rnn(cell, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
+        if num_layers == 1:
+            if (model == 'rnn'):
+                cell = BasicRNNCell(num_units)
+            elif (model == 'gru'):
+                cell = GRUCell(num_units)
+            elif (model == 'lstm'):
+                cell = BasicLSTMCell(num_units)
+        
+            cell_do = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=1.0, output_keep_prob=FLAGS.keep_prob)
+            outputs, states = dynamic_rnn(cell_do, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
             #todo: implement unfinished networks
             outputs_flat = tf.reduce_mean(outputs, 1)
-            print(outputs, states, outputs_flat)
+            if (model =='lstm'):
+                states = states[1]
             # W_f = weight_variable([tf.app.flags.FLAGS.units, 5])
             # b_f = bias_variable([5])
             # logits = tf.matmul(outputs_flat, W_f) + b_f
@@ -80,18 +85,29 @@ class RNN(object):
             self.reverse_texts = tf.placeholder(tf.string, [None, None], name="reverse_texts")  # shape: batch*len
             self.index_reverse_input = self.symbol2index.lookup(self.reverse_texts)
             self.embed_reverse_input = tf.nn.embedding_lookup(self.embed, self.index_reverse_input) #batch*len*embed_unit
-            # cell1 = BasicRNNCell(num_units)
-            # cell1 = GRUCell(num_units)
-            cell1 = BasicLSTMCell(num_units)
-
-            # cell2 = BasicRNNCell(num_units)
-            # cell2 = GRUCell(num_units)
-            cell2 = BasicLSTMCell(num_units)
-            outputs1, states1 = dynamic_rnn(cell1, self.embed_reverse_input, self.texts_length, dtype=tf.float32, scope="rnn")
-            outputs2, states2 = dynamic_rnn(cell2, self.embed_reverse_input, self.texts_length, dtype=tf.float32, scope="rnn")
             
-            states = states1[-1] + states2[-1]
-            # fc_layer = tf.layers.dense(inputs = states2, units = 32, activation = tf.nn.relu)
+            if (model == 'rnn'):
+                cell1 = BasicRNNCell(num_units)
+                cell2 = BasicRNNCell(num_units)
+            elif (model == 'gru'):
+                cell1 = GRUCell(num_units)
+                cell2 = GRUCell(num_units)
+            elif (model == 'lstm'):
+                cell1 = BasicLSTMCell(num_units)
+                cell2 = BasicLSTMCell(num_units)
+
+            cell1_do = tf.nn.rnn_cell.DropoutWrapper(cell1, input_keep_prob=1.0, output_keep_prob=FLAGS.keep_prob)
+            cell2_do = tf.nn.rnn_cell.DropoutWrapper(cell2, input_keep_prob=1.0, output_keep_prob=FLAGS.keep_prob)
+            
+            outputs1, states1 = dynamic_rnn(cell1_do, self.embed_input, self.texts_length, dtype=tf.float32, scope="rnn")
+            outputs2, states2 = dynamic_rnn(cell2_do, self.embed_reverse_input, self.texts_length, dtype=tf.float32, scope="rnn")
+            
+            if (model == 'lstm'):
+                states = states1[1] + states2[1]
+            else:
+                states = states1 + states2
+            
+            # fc_layer = tf.layers.dense(inputs = states, units = 32, activation = tf.nn.relu)
             logits = tf.layers.dense(inputs = states, units = 5, activation = None)
 
         self.loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=logits), name='loss')
@@ -102,8 +118,8 @@ class RNN(object):
         self.params = tf.trainable_variables()
             
         # calculate the gradient of parameters
-        # opt = tf.train.GradientDescentOptimizer(self.learning_rate)
-        opt = tf.train.AdamOptimizer(self.learning_rate)
+        opt = tf.train.GradientDescentOptimizer(self.learning_rate)
+        # opt = tf.train.AdamOptimizer(self.learning_rate)
         
         gradients = tf.gradients(mean_loss, self.params)
         clipped_gradients, self.gradient_norm = tf.clip_by_global_norm(gradients, max_gradient_norm)

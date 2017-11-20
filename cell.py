@@ -117,6 +117,6 @@ def weight_variable(shape):  # you can use this func to build new variables
     return tf.Variable(initial)
 
 
-def bias_variable(shape, init_value = 0.1):  # you can use this func to build new variables
+def bias_variable(shape, init_value = 0.01):  # you can use this func to build new variables
     initial = tf.constant(init_value, shape=shape)
     return tf.Variable(initial)

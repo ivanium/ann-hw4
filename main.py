@@ -21,7 +21,8 @@ tf.app.flags.DEFINE_integer("batch_size", 16, "Batch size to use during training
 tf.app.flags.DEFINE_string("data_dir", "./data", "Data directory")
 tf.app.flags.DEFINE_string("train_dir", "./train", "Training directory.")
 tf.app.flags.DEFINE_boolean("log_parameters", True, "Set to True to show the parameters")
-tf.app.flags.DEFINE_boolean("learning_rate", 0.01, "learning rate")
+tf.app.flags.DEFINE_float("learning_rate", 0.01, "learning rate")
+tf.app.flags.DEFINE_float("keep_prob", 0.5, "learning rate")
 
 FLAGS = tf.app.flags.FLAGS
 
