@@ -59,7 +59,7 @@ class RNN(object):
         
         self.embed_input = tf.nn.embedding_lookup(self.embed, self.index_input) #batch*len*embed_unit
 
-        model = 'rnn'
+        model = 'lstm'
 
         if num_layers == 1:
             if (model == 'rnn'):
@@ -74,7 +74,7 @@ class RNN(object):
             #todo: implement unfinished networks
             outputs_flat = tf.reduce_mean(outputs, 1)
             if (model =='lstm'):
-                states = states[1]
+                states = states[0]
             # W_f = weight_variable([tf.app.flags.FLAGS.units, 5])
             # b_f = bias_variable([5])
             # logits = tf.matmul(outputs_flat, W_f) + b_f
@@ -103,7 +103,7 @@ class RNN(object):
             outputs2, states2 = dynamic_rnn(cell2_do, self.embed_reverse_input, self.texts_length, dtype=tf.float32, scope="rnn")
             
             if (model == 'lstm'):
-                states = states1[1] + states2[1]
+                states = states1[0] + states2[0]
             else:
                 states = states1 + states2
             
