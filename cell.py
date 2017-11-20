@@ -4,12 +4,12 @@ FLAGS = tf.app.flags.FLAGS
 
 class BasicRNNCell(tf.contrib.rnn.RNNCell):
 
-    def __init__(self, num_units, activation=tf.tanh, reuse=None):
+    def __init__(self, num_units, activation=tf.tanh, reuse=None, input_units=300):
         self._num_units = num_units
         self._activation = activation
         self._reuse = reuse
 
-        self.W = weight_variable([FLAGS.embed_units, self.state_size])
+        self.W = weight_variable([input_units, self.state_size])
         self.U = weight_variable([self.state_size, self.state_size])
         self.b = bias_variable([self.state_size])
 
@@ -31,14 +31,14 @@ class BasicRNNCell(tf.contrib.rnn.RNNCell):
 class GRUCell(tf.contrib.rnn.RNNCell):
     '''Gated Recurrent Unit cell (http://arxiv.org/abs/1406.1078).'''
 
-    def __init__(self, num_units, activation=tf.tanh, reuse=None):
+    def __init__(self, num_units, activation=tf.tanh, reuse=None, input_units=300):
         self._num_units = num_units
         self._activation = activation
         self._reuse = reuse
 
-        self.W_z = weight_variable([FLAGS.embed_units, self.state_size])
-        self.W_r = weight_variable([FLAGS.embed_units, self.state_size])
-        self.W_c = weight_variable([FLAGS.embed_units, self.state_size])
+        self.W_z = weight_variable([input_units, self.state_size])
+        self.W_r = weight_variable([input_units, self.state_size])
+        self.W_c = weight_variable([input_units, self.state_size])
 
         self.U_z = weight_variable([self.state_size, self.state_size])
         self.U_r = weight_variable([self.state_size, self.state_size])
@@ -69,16 +69,16 @@ class GRUCell(tf.contrib.rnn.RNNCell):
 class BasicLSTMCell(tf.contrib.rnn.RNNCell):
     '''Basic LSTM cell (http://arxiv.org/abs/1409.2329).'''
 
-    def __init__(self, num_units, forget_bias=1.0, activation=tf.tanh, reuse=None):
+    def __init__(self, num_units, forget_bias=1.0, activation=tf.tanh, reuse=None, input_nums = 300):
         self._num_units = num_units
         self._forget_bias = forget_bias
         self._activation = activation
         self._reuse = reuse
 
-        self.W_i = weight_variable([FLAGS.embed_units, self.state_size[0]])
-        self.W_o = weight_variable([FLAGS.embed_units, self.state_size[0]])
-        self.W_f = weight_variable([FLAGS.embed_units, self.state_size[0]])
-        self.W_c = weight_variable([FLAGS.embed_units, self.state_size[0]])
+        self.W_i = weight_variable([input_nums, self.state_size[0]])
+        self.W_o = weight_variable([input_nums, self.state_size[0]])
+        self.W_f = weight_variable([input_nums, self.state_size[0]])
+        self.W_c = weight_variable([input_nums, self.state_size[0]])
         
         self.U_i = weight_variable([self.state_size[0], self.state_size[0]])
         self.U_o = weight_variable([self.state_size[0], self.state_size[0]])

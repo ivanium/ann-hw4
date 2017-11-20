@@ -59,7 +59,7 @@ class RNN(object):
         
         self.embed_input = tf.nn.embedding_lookup(self.embed, self.index_input) #batch*len*embed_unit
 
-        model = 'lstm'
+        model = 'rnn'
 
         if num_layers == 1:
             if (model == 'rnn'):
